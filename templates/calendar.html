@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% set active="calendar" %}
+{% set heading="Hearing Calendar" %}
+{% set subheading="View all hearings in calendar format." %}
+
+{% block content %}
+
+<div class="panel">
+  <div class="panel-header">
+    <h2>📅 Calendar</h2>
+    <span class="muted">Click on any hearing to open the case</span>
+  </div>
+
+  <div id="calendarBox" class="calendar-box"></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  let calendarEl = document.getElementById("calendarBox");
+
+  let calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: "dayGridMonth",
+    height: 680,
+    events: "/calendar_events",
+
+    headerToolbar: {
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek,timeGridDay"
+    },
+
+    eventClick: function(info){
+      window.location.href = "/edit/" + info.event.id;
+    }
+  });
+
+  calendar.render();
+});
+</script>
+
+{% endblock %}

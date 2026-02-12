@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% set active="dashboard" %}
+{% set heading="Dashboard" %}
+{% set subheading="Quick overview of your cases and hearings." %}
+
+{% block content %}
+
+<div class="grid-4">
+  <div class="card">
+    <div class="card-title">Total Cases</div>
+    <div class="card-value" id="totalCases">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Active Cases</div>
+    <div class="card-value" id="activeCases">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Pending Cases</div>
+    <div class="card-value" id="pendingCases">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Next 7 Days Hearings</div>
+    <div class="card-value" id="upcomingCases">0</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Today’s Hearings</h2>
+      <span class="muted">Cases scheduled for today</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Case</th>
+            <th>Court</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="todayHearings"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Upcoming Hearings</h2>
+      <span class="muted">Nearest hearings (next 15)</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Case</th>
+            <th>Court</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="upcomingHearings"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadDashboard(){
+  let res = await fetch("/get_cases");
+  let cases = await res.json();
+
+  document.getElementById("totalCases").innerText = cases.length;
+
+  let active = cases.filter(c => c.status === "Active").length;
+  let pending = cases.filter(c => c.status === "Pending").length;
+
+  document.getElementById("activeCases").innerText = active;
+  document.getElementById("pendingCases").innerText = pending;
+
+  // dates
+  let today = new Date().toISOString().slice(0,10);
+
+  let next7 = new Date();
+  next7.setDate(next7.getDate()+7);
+  let next7Str = next7.toISOString().slice(0,10);
+
+  let todayList = cases.filter(c => c.hearing_date === today);
+  let upcomingList = cases.filter(c => c.hearing_date >= today && c.hearing_date <= next7Str);
+
+  document.getElementById("upcomingCases").innerText = upcomingList.length;
+
+  // Fill today table
+  let tBody = document.getElementById("todayHearings");
+  tBody.innerHTML = "";
+  if(todayList.length === 0){
+    tBody.innerHTML = `<tr><td colspan="5" class="empty">No hearings today</td></tr>`;
+  } else {
+    todayList.forEach(c=>{
+      tBody.innerHTML += `
+        <tr>
+          <td>${c.client_name}</td>
+          <td>${c.case_title}</td>
+          <td>${c.court}</td>
+          <td>${c.hearing_date}</td>
+          <td><span class="status ${c.status.toLowerCase()}">${c.status}</span></td>
+        </tr>
+      `;
+    });
+  }
+
+  // Fill upcoming table
+  let uBody = document.getElementById("upcomingHearings");
+  uBody.innerHTML = "";
+  if(upcomingList.length === 0){
+    uBody.innerHTML = `<tr><td colspan="5" class="empty">No upcoming hearings</td></tr>`;
+  } else {
+    upcomingList.slice(0,15).forEach(c=>{
+      uBody.innerHTML += `
+        <tr>
+          <td>${c.client_name}</td>
+          <td>${c.case_title}</td>
+          <td>${c.court}</td>
+          <td>${c.hearing_date}</td>
+          <td><span class="status ${c.status.toLowerCase()}">${c.status}</span></td>
+        </tr>
+      `;
+    });
+  }
+}
+
+loadDashboard();
+</script>
+
+{% endblock %}

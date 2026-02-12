@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hearings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Upcoming Hearings</h2>
+        <ul id="hearingList"></ul>
+        <a href="/">Back</a>
+    </div>
+</div>
+
+<script>
+async function loadHearings() {
+    let response = await fetch("/get_cases");
+    let cases = await response.json();
+
+    let list = document.getElementById("hearingList");
+    list.innerHTML = "";
+
+    cases.forEach(c => {
+        list.innerHTML += `<li>${c.hearing_date} — ${c.client_name} — ${c.case_title}</li>`;
+    });
+}
+
+loadHearings();
+</script>
+
+</body>
+</html>

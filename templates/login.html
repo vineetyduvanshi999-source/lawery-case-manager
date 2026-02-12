@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - VIPUL KUMAR</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+  <div class="login-wrap">
+    <div class="login-box">
+
+      <img src="{{ url_for('static', filename='logo.png') }}" class="login-logo" alt="Logo">
+
+      <h1>VIPUL KUMAR</h1>
+      <p>Lawyer Case Management System</p>
+
+      <form action="/auth" method="POST">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="Enter username" required>
+
+        <label style="margin-top:12px;">Password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:16px;">
+          🔐 Login
+        </button>
+      </form>
+
+      <div class="login-note" style="margin-top:14px; font-size:13px; color:#64748b;">
+        Default: <b>lawyer</b> / <b>1234</b>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

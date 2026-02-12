@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% set active="add" %}
+{% set heading="Add New Case" %}
+{% set subheading="Create a new case entry with hearing date and status." %}
+
+{% block content %}
+
+<div class="form-card">
+
+  <h2 style="font-size:18px; font-weight:900; color:#0b3a78; margin-bottom:6px;">
+    ➕ Add Case
+  </h2>
+
+  <p style="font-size:13px; color:#64748b; margin-bottom:18px;">
+    Fill the details below and click <b>Save Case</b>.
+  </p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+
+    <div>
+      <label>Client Name</label>
+      <input id="client_name" placeholder="Enter client name">
+    </div>
+
+    <div>
+      <label>Case Title</label>
+      <input id="case_title" placeholder="Example: Property Dispute / Divorce / Criminal">
+    </div>
+
+    <div>
+      <label>Court</label>
+      <input id="court" placeholder="Example: District Court, High Court">
+    </div>
+
+    <div>
+      <label>Hearing Date</label>
+      <input id="hearing_date" type="date">
+    </div>
+
+    <div style="grid-column:1 / span 2;">
+      <label>Status</label>
+      <select id="status">
+        <option value="Pending">Pending</option>
+        <option value="Active">Active</option>
+        <option value="Closed">Closed</option>
+      </select>
+    </div>
+
+  </div>
+
+  <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="saveCase()">💾 Save Case</button>
+    <a href="/view" class="btn btn-light">📂 View Cases</a>
+  </div>
+
+</div>
+
+<script>
+async function saveCase(){
+
+  let client_name = document.getElementById("client_name").value.trim();
+  let case_title = document.getElementById("case_title").value.trim();
+  let court = document.getElementById("court").value.trim();
+  let hearing_date = document.getElementById("hearing_date").value;
+  let status = document.getElementById("status").value;
+
+  if(client_name === "" || case_title === "" || court === ""){
+    alert("Please fill all required fields!");
+    return;
+  }
+
+  let res = await fetch("/add_case", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_name,
+      case_title,
+      court,
+      hearing_date,
+      status
+    })
+  });
+
+  let data = await res.json();
+
+  alert(data.message || "Case saved successfully!");
+
+  // Clear fields
+  document.getElementById("client_name").value = "";
+  document.getElementById("case_title").value = "";
+  document.getElementById("court").value = "";
+  document.getElementById("hearing_date").value = "";
+  document.getElementById("status").value = "Pending";
+}
+</script>
+
+{% endblock %}
