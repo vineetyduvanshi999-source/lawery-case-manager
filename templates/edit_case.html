@@ -1,133 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Edit Case</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=999">
-</head>
-<body>
+  <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="updateCase()">✅ Update Case</button>
 
-<div class="navbar">
-  <div class="nav-left">
-    <img src="{{ url_for('static', filename='logo.png') }}" class="nav-logo">
-    <div class="nav-title">
-      <div class="nav-name">VIPUL KUMAR</div>
-      <div class="nav-sub">Lawyer Case Management System</div>
-    </div>
+    <!-- ✅ SHOW ONLY ONE COURT BUTTON -->
+    {% if case[6] == "Dwarka District Court" %}
+      <button class="btn btn-light" onclick="openDistrictCourt()">
+        🏛 District Court Site
+      </button>
+    {% elif case[6] == "Delhi High Court" %}
+      <button class="btn btn-light" onclick="openHighCourt()">
+        ⚖ High Court Site
+      </button>
+    {% endif %}
+
+    <button class="btn btn-danger" onclick="deleteCase({{ case[0] }})">🗑 Delete Case</button>
   </div>
-
-  <div class="nav-links">
-    <a href="/">Dashboard</a>
-    <a href="/view">Cases</a>
-    <a href="/calendar">Calendar</a>
-    <a href="/logout">Logout</a>
-  </div>
-</div>
-
-<div class="container">
-
-  <div class="card">
-    <div class="page-title">Edit Case</div>
-    <div class="page-subtitle">Update details and save changes.</div>
-
-    <input class="input" id="client_name" value="{{ case[1] }}">
-    <input class="input" id="case_title" value="{{ case[2] }}">
-    <input class="input" id="court" value="{{ case[3] }}">
-    <input class="input" id="hearing_date" type="date" value="{{ case[4] }}">
-    <select class="input" id="status">
-  <option value="Pending" {% if case[5]=="Pending" %}selected{% endif %}>Pending</option>
-  <option value="Active" {% if case[5]=="Active" %}selected{% endif %}>Active</option>
-  <option value="Closed" {% if case[5]=="Closed" %}selected{% endif %}>Closed</option>
-</select>
-
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;">
-      <button class="btn" onclick="updateCase()">Update</button>
-      <a class="btn btn-gray" href="/view">Back</a>
-      <a class="btn btn-gray" href="/export_case_pdf/{{ case[0] }}">Download Case PDF</a>
-    </div>
-  </div>
-
-  <!-- NOTES -->
-  <div class="card" style="margin-top:18px;">
-    <div class="page-title" style="font-size:18px;">Case Notes</div>
-    <div class="page-subtitle">Add notes and keep hearing updates history.</div>
-
-    <textarea id="noteText" class="input" style="height:90px;" placeholder="Write note..."></textarea>
-
-    <button class="btn" style="margin-top:12px;" onclick="addNote()">Add Note</button>
-
-    <div id="notesBox" style="margin-top:16px;"></div>
-  </div>
-
-</div>
-
-<script>
-async function updateCase(){
-  let data = {
-    id: {{ case[0] }},
-    client_name: document.getElementById("client_name").value,
-    case_title: document.getElementById("case_title").value,
-    court: document.getElementById("court").value,
-    hearing_date: document.getElementById("hearing_date").value,
-    status: document.getElementById("status").value
-  };
-
-  let res = await fetch("/update", {
-    method:"PUT",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(data)
-  });
-
-  let result = await res.json();
-  alert(result.message);
-  window.location="/view";
-}
-
-async function addNote(){
-  let note = document.getElementById("noteText").value;
-
-  let res = await fetch("/add_note/{{ case[0] }}", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({note: note})
-  });
-
-  let result = await res.json();
-
-  if(result.error){
-    alert(result.error);
-    return;
-  }
-
-  document.getElementById("noteText").value = "";
-  loadNotes();
-}
-
-async function loadNotes(){
-  let res = await fetch("/get_notes/{{ case[0] }}");
-  let notes = await res.json();
-
-  let box = document.getElementById("notesBox");
-  box.innerHTML = "";
-
-  if(notes.length === 0){
-    box.innerHTML = "<p>No notes added yet.</p>";
-    return;
-  }
-
-  notes.forEach(n=>{
-    box.innerHTML += `
-      <div class="card" style="margin-top:10px; padding:14px; background:#f9fafb;">
-        <div style="font-size:13px; color:#6b7280; font-weight:700;">${n.time}</div>
-        <div style="margin-top:6px; font-size:14px;">${n.note}</div>
-      </div>
-    `;
-  });
-}
-
-loadNotes();
-</script>
-
-</body>
-</html>

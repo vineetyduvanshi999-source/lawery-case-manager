@@ -21,22 +21,27 @@
     </div>
   </div>
 
+  <!-- SEARCH -->
   <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-    <input id="search" class="input" placeholder="Search by client name..." style="max-width:340px;">
+    <input id="search" class="input" placeholder="Search by client / case title / case no / court..." style="max-width:420px;">
     <button class="btn btn-primary" onclick="searchCase()">🔍 Search</button>
     <button class="btn btn-light" onclick="loadCases()">↻ Show All</button>
   </div>
 
+  <!-- TABLE -->
   <div class="table-wrap" style="margin-top:16px;">
     <table class="table">
       <thead>
         <tr>
           <th>Client</th>
           <th>Case Title</th>
+          <th>Case No</th>
+          <th>Year</th>
+          <th>Type</th>
           <th>Court</th>
           <th>Hearing</th>
           <th>Status</th>
-          <th style="min-width:360px;">Actions</th>
+          <th style="min-width:760px;">Actions</th>
         </tr>
       </thead>
       <tbody id="caseTable"></tbody>
@@ -55,17 +60,27 @@ function statusBadge(status){
   return `<span class="status pending">Pending</span>`;
 }
 
+/* PHASE 4: Separate URLs */
+function getDistrictCourtUrl(){
+  return "https://southwestdelhi.dcourts.gov.in/case-status-search-by-case-number/";
+}
+
+function getHighCourtUrl(){
+  return "https://delhihighcourt.nic.in/app/get-case-type-status";
+}
+
 function renderCases(cases){
   let table = document.getElementById("caseTable");
   table.innerHTML = "";
 
   if(cases.length === 0){
-    table.innerHTML = `<tr><td colspan="6" class="empty">No cases found.</td></tr>`;
+    table.innerHTML = `<tr><td colspan="9" class="empty">No cases found.</td></tr>`;
     return;
   }
 
   cases.forEach(c => {
 
+    // Document download
     let docHtml = "";
     if(c.document && c.document.trim() !== ""){
       docHtml = `
@@ -73,10 +88,32 @@ function renderCases(cases){
       `;
     }
 
+    // PHASE 4: Separate court buttons
+    let courtButtons = "";
+
+    if(c.court === "Dwarka District Court"){
+      courtButtons = `
+        <button class="btn btn-light" onclick="window.open('${getDistrictCourtUrl()}', '_blank')">
+          🏛 District Court Site
+        </button>
+      `;
+    }
+
+    if(c.court === "Delhi High Court"){
+      courtButtons = `
+        <button class="btn btn-light" onclick="window.open('${getHighCourtUrl()}', '_blank')">
+          ⚖ High Court Site
+        </button>
+      `;
+    }
+
     let row = `
       <tr>
         <td>${c.client_name || ""}</td>
         <td>${c.case_title || ""}</td>
+        <td>${c.case_number || ""}</td>
+        <td>${c.case_year || ""}</td>
+        <td>${c.case_type || ""}</td>
         <td>${c.court || ""}</td>
         <td>${c.hearing_date || ""}</td>
         <td>${statusBadge(c.status)}</td>
@@ -84,11 +121,15 @@ function renderCases(cases){
         <td>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
 
+            <a class="btn btn-light" href="/case/${c.id}">🧾 Full Detail</a>
+
             <a class="btn btn-primary" href="/edit/${c.id}">✏ Edit</a>
 
             <a class="btn btn-light" href="/export_case_pdf/${c.id}">
               📄 Case PDF
             </a>
+
+            ${courtButtons}
 
             <button class="btn btn-danger" onclick="deleteCase(${c.id})">🗑 Delete</button>
 
@@ -112,14 +153,14 @@ async function loadCases(){
 }
 
 async function searchCase(){
-  let name = document.getElementById("search").value.trim();
+  let query = document.getElementById("search").value.trim();
 
-  if(name === ""){
+  if(query === ""){
     loadCases();
     return;
   }
 
-  let res = await fetch("/search/" + name);
+  let res = await fetch("/search_any/" + encodeURIComponent(query));
   let cases = await res.json();
   renderCases(cases);
 }

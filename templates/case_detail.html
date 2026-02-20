@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% set active="view" %}
+{% set heading="Case Full Details" %}
+{% set subheading="View complete case details in one page (like challan/receipt format)." %}
+
+{% block content %}
+
+<div class="panel" style="max-width:100%;">
+
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap;">
+    <div>
+      <h2 style="font-size:18px; font-weight:900; color:#0b3a78;">
+        🧾 Case Full Details
+      </h2>
+      <p style="font-size:13px; color:#64748b; margin-top:4px;">
+        Case ID: <b>#{{ case[0] }}</b>
+      </p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+      <a class="btn btn-light" href="/view">⬅ Back</a>
+      <a class="btn btn-primary" href="/edit/{{ case[0] }}">✏ Edit</a>
+      <a class="btn btn-light" href="/export_case_pdf/{{ case[0] }}">📄 PDF</a>
+
+      <!-- ✅ PHASE 4: COURT BUTTONS (SHOW ONLY ONE) -->
+      {% if case[6] == "Dwarka District Court" %}
+        <button class="btn btn-light" onclick="openDistrictCourt()">🏛 District Court Site</button>
+      {% elif case[6] == "Delhi High Court" %}
+        <button class="btn btn-light" onclick="openHighCourt()">⚖ High Court Site</button>
+      {% endif %}
+
+      <button class="btn btn-light" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+
+  <div style="margin-top:18px; display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+    <div class="card">
+      <div class="card-title">Client Name</div>
+      <div class="card-value" style="font-size:18px;">{{ case[1] }}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Case Title</div>
+      <div class="card-value" style="font-size:18px;">{{ case[2] }}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Case Number</div>
+      <div class="card-value" style="font-size:18px;">{{ case[3] }}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Case Year</div>
+      <div class="card-value" style="font-size:18px;">{{ case[4] }}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Case Type</div>
+      <div class="card-value" style="font-size:18px;">{{ case[5] }}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Court</div>
+      <div class="card-value" style="font-size:18px;">{{ case[6] }}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Hearing Date</div>
+      <div class="card-value" style="font-size:18px;">
+        {% if case[7] %}
+          {{ case[7] }}
+        {% else %}
+          -
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Status</div>
+      <div style="margin-top:10px;">
+        {% if case[8] == "Active" %}
+          <span class="status active">Active</span>
+        {% elif case[8] == "Closed" %}
+          <span class="status closed">Closed</span>
+        {% else %}
+          <span class="status pending">Pending</span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DOCUMENT -->
+  <div style="margin-top:18px;">
+    <h3 style="font-size:15px; font-weight:900; color:#0b3a78; margin-bottom:10px;">
+      📎 Uploaded Document
+    </h3>
+
+    {% if case[9] and case[9] != "" %}
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <span class="badge">📄 {{ case[9] }}</span>
+        <a class="btn btn-light" href="/download/{{ case[9] }}">⬇ Download</a>
+      </div>
+    {% else %}
+      <div class="empty">No document uploaded yet.</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- NOTES -->
+<div class="panel" style="margin-top:18px; max-width:100%;">
+  <div class="panel-header">
+    <h2>📝 Case Notes</h2>
+    <span class="muted">Notes saved for this case (latest first)</span>
+  </div>
+
+  <div class="table-wrap" style="margin-top:12px;">
+    <table class="table" style="min-width:600px;">
+      <thead>
+        <tr>
+          <th>Note</th>
+          <th style="width:200px;">Time</th>
+        </tr>
+      </thead>
+      <tbody id="notesTable">
+        <tr><td colspan="2" class="empty">Loading notes...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function openDistrictCourt(){
+  window.open("https://southwestdelhi.dcourts.gov.in/case-status-search-by-case-number/", "_blank");
+}
+
+function openHighCourt(){
+  window.open("https://delhihighcourt.nic.in/app/get-case-type-status", "_blank");
+}
+
+async function loadNotes(){
+  let res = await fetch("/get_notes/{{ case[0] }}");
+  let notes = await res.json();
+
+  let table = document.getElementById("notesTable");
+  table.innerHTML = "";
+
+  if(notes.length === 0){
+    table.innerHTML = `<tr><td colspan="2" class="empty">No notes added yet.</td></tr>`;
+    return;
+  }
+
+  notes.forEach(n=>{
+    table.innerHTML += `
+      <tr>
+        <td>${n.note}</td>
+        <td>${n.time}</td>
+      </tr>
+    `;
+  });
+}
+
+loadNotes();
+</script>
+
+{% endblock %}

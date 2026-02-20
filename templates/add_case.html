@@ -1,71 +1,344 @@
 {% extends "base.html" %}
 {% set active="add" %}
 {% set heading="Add New Case" %}
-{% set subheading="Create a new case entry with hearing date and status." %}
+{% set subheading="Create case manually OR upload PDF to auto-fill details." %}
 
 {% block content %}
 
-<div class="form-card">
+<div class="panel">
 
-  <h2 style="font-size:18px; font-weight:900; color:#0b3a78; margin-bottom:6px;">
-    ➕ Add Case
-  </h2>
-
-  <p style="font-size:13px; color:#64748b; margin-bottom:18px;">
-    Fill the details below and click <b>Save Case</b>.
-  </p>
-
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-
+  <!-- HEADER -->
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap;">
     <div>
-      <label>Client Name</label>
-      <input id="client_name" placeholder="Enter client name">
+      <h2 style="font-size:18px; font-weight:900; color:#0b3a78;">
+        ➕ Add Case
+      </h2>
+      <p style="font-size:13px; color:#64748b; margin-top:4px;">
+        Add case manually OR upload PDF to auto-fill + auto-detect next hearing date.
+      </p>
     </div>
 
-    <div>
-      <label>Case Title</label>
-      <input id="case_title" placeholder="Example: Property Dispute / Divorce / Criminal">
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="/view" class="btn btn-light">📂 View Cases</a>
     </div>
-
-    <div>
-      <label>Court</label>
-      <input id="court" placeholder="Example: District Court, High Court">
-    </div>
-
-    <div>
-      <label>Hearing Date</label>
-      <input id="hearing_date" type="date">
-    </div>
-
-    <div style="grid-column:1 / span 2;">
-      <label>Status</label>
-      <select id="status">
-        <option value="Pending">Pending</option>
-        <option value="Active">Active</option>
-        <option value="Closed">Closed</option>
-      </select>
-    </div>
-
   </div>
 
-  <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
-    <button class="btn btn-primary" onclick="saveCase()">💾 Save Case</button>
-    <a href="/view" class="btn btn-light">📂 View Cases</a>
+  <!-- ============ PDF UPLOAD SECTION ============ -->
+  <div class="form-card" style="margin-top:14px; max-width:100%;">
+
+    <h3 style="font-size:15px; font-weight:900; color:#0b3a78; margin-bottom:10px;">
+      📄 Upload PDF (Auto Create Case)
+    </h3>
+
+    <p style="font-size:13px; color:#64748b; margin-bottom:12px;">
+      Upload court PDF (order / status). Software will auto-create case and detect next hearing date.
+    </p>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+      <input class="input" type="file" id="pdfFile" accept=".pdf" style="max-width:320px;">
+      <button class="btn btn-primary" onclick="uploadPdfCreateCase()">⬆ Upload & Create</button>
+    </div>
+
+    <div id="pdfMsg" style="margin-top:10px; font-size:13px;"></div>
+  </div>
+
+  <!-- ============ MANUAL FORM SECTION ============ -->
+  <div class="form-card" style="margin-top:14px; max-width:100%;">
+
+    <h3 style="font-size:15px; font-weight:900; color:#0b3a78; margin-bottom:10px;">
+      ✍ Add Case Manually
+    </h3>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+
+      <div>
+        <label>Client Name</label>
+        <input id="client_name" class="input" placeholder="Enter client name">
+      </div>
+
+      <div>
+        <label>Case Title</label>
+        <input id="case_title" class="input" placeholder="Example: ABC vs XYZ / Divorce / Bail">
+      </div>
+
+      <div>
+        <label>Case Number</label>
+        <input id="case_number" class="input" placeholder="Example: 1234">
+      </div>
+
+      <div>
+        <label>Case Year</label>
+        <input id="case_year" class="input" placeholder="Example: 2025">
+      </div>
+
+      <!-- COURT TYPE -->
+      <div>
+        <label>Court Type</label>
+        <select id="case_type" class="input" onchange="loadCaseTypes(); autoSetCourt();">
+          <option value="">-- Select Court Type --</option>
+          <option value="District Court">District Court</option>
+          <option value="High Court">High Court</option>
+        </select>
+      </div>
+
+      <!-- COURT -->
+      <div>
+        <label>Court</label>
+        <select id="court" class="input" onchange="loadCaseTypes();">
+          <option value="">-- Select Court --</option>
+          <option value="Dwarka District Court">Delhi Dwarka District Court</option>
+          <option value="Delhi High Court">Delhi High Court</option>
+        </select>
+      </div>
+
+      <!-- CASE SUB TYPE -->
+      <div>
+        <label>Case Type</label>
+        <select id="case_sub_type" class="input">
+          <option value="">-- Select Case Type --</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Hearing Date</label>
+        <input id="hearing_date" class="input" type="date">
+      </div>
+
+      <div>
+        <label>Status</label>
+        <select id="status" class="input">
+          <option value="Pending">Pending</option>
+          <option value="Active">Active</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="saveCase()">💾 Save Case</button>
+
+      <button class="btn btn-light" onclick="openCourtSite()">
+        🌐 Open Court Search Page
+      </button>
+
+      <a href="/view" class="btn btn-light">📂 View Cases</a>
+    </div>
+
   </div>
 
 </div>
 
+
 <script>
+/* ==========================
+   HIGH COURT CASE TYPES
+========================== */
+const HIGH_COURT_CASE_TYPES = [
+  "ADMIN.REPORT","ARB.A.","ARB. A. (COMM.)","ARB.P.","BAIL APPLN.","CA","CA (COMM.IPD-CR)",
+  "C.A.(COMM.IPD-GI)","C.A.(COMM.IPD-PAT)","C.A.(COMM.IPD-PV)","C.A.(COMM.IPD-TM)",
+  "CAVEAT(CO.)","CC(ARB.)","CCP(CO.)","CCP(REF)","CEAC","CEAR","CHAT.A.C.","CHAT.A.REF",
+  "CMI","CM(M)","CM(M)-IPD","C.O.","CO.APP.","CO.APPL.(C)","CO.APPL.(M)","CO.A(SB)",
+  "C.O.(COMM.IPD-CR)","C.O.(COMM.IPD-GI)","C.O.(COMM.IPD-PAT)","C.O.(COMM.IPD-TM)",
+  "CO.EX.","CONT.APP.(C)","CONT.CAS(C)","CONT.CAS.(CRL)","CO.PET.","C.REF.","CRL.A.",
+  "CRL.LIP.","CRL.M.C.","CRL.M.(CO)","CRL.M.I.","CRL.O.","CRL.O.(CO.)","CRL.REF.",
+  "CRL.REV.P.","CRL.REV.P.(MAT.)","CRL.REV.P.(NDPS)","CRL.REV.P.(NI)","C.R.P.",
+  "CRP-IPD","C.RULE","CS(COMM)","CS(COMM) INFRA","CS(OS)","CS(OS) GP","CUSAA",
+  "CUS.A.C.","CUS.A.R.","CUSTOMA.","DEATH SENTENCE REF.","DEMO","EDC","EDR","EFA(COMM)",
+  "EFA(OS)","EFA(OS) (COMM)","EFA(OS)(IPD)","EL.PET.","ETR","EX.F.A.","EX.P.","EX.S.A.",
+  "FAO","FAO (COMM)","FAO-IPD","FAO(OS)","FAO(OS) (COMM)","FAO(OS)(IPD)","GCAC","GCAR",
+  "GTA","GTC","GTR","I.A.","I.P.A.","ITA","ITC","ITR","ITSA","LA.APP.","LPA","MAC.APP.",
+  "MAT.","MAT.APP.","MAT. APP.(FC.)","MAT.CASE","MAT.REF.","MISC. APPEAL (FEMA)",
+  "MISC. APPEAL(PMLA)","OA","OCJA","O.M.P.","O.M.P.(COMM)","OMP (CONT.)","O.M.P.(E)",
+  "O.M.P (E) (COMM.)","O.M.P.(EFA)(COMM.)","O.M.P.(ENF.)","OMP (ENF.) (COMM.)",
+  "O.M.P.(I)","O.M.P.(I) (COMM.)","O.M.P.(J) (COMM.)","O.M.P.(MISC.)",
+  "O.M.P.(MISC.)(COMM.)","O.M.P.(T)","O.M.P.(T) (COMM.)","O.REF.","RC.REV.","RC.S.A.",
+  "RERA APPEAL","REVIEW PET.","RFA","RFA(COMM)","RFA-IPD","RFA(OS)","RFA(OS)(COMM)",
+  "RFA(OS)(IPD)","RSA","SCA","SDR","SERTA","ST.APPL.","STC","ST.REF.","SUR.T.REF.",
+  "TEST.CAS.","TR.P.(C)","TR.P.(C.)","TR.P.(CRL.)","VAT APPEAL","W.P.(C)","W.P.(C)-IPD",
+  "W.P.(CRL)","WTA","WTC","WTR"
+];
+
+
+/* ==========================
+   DWARKA CASE TYPES
+========================== */
+const DWARKA_CASE_TYPES = [
+  "Court Complaint","C. R. ACT 1954","Cr. Case","CR CRIMINAL REVISION","CS (COMM)",
+  "CS DJ ADJ","CS SCJ","Ct. Cases","DD","Dpt. Eq","Dpt. Eq.","DR",
+  "E.P.","ESIC","Ex.-Award By Arb.","EX CIVIL","Ex.COMM - Award by Arb. Comm.","EX CRIMINAL",
+  "Execution (Comm.)","GP","Hindu Adp","HMA","HTA","IDA",
+  "Insolvency","ITA","LAC","LC","LCA","L. I. D","LIR",
+  "MACT","MC","MCA DJ ADJ","MCA SCJ","MCD APPL","MCD CHL","M.Ex","MGP","MHA",
+  "MISC DJ ADJ","MISC DJ ASJ","Misc. DR","MISC RC ARC","MISC SCJ","ML","MPC","Mt. CASE",
+  "OMP (COMM.)","OMP (E) (COMM.)","OMP (I)(COMM.)","OMP MISC. (COMM.)","OMP (T) (COMM.)",
+  "OP","PC","PPA","RCA CIVIL DJ ADJ","RC ARC","RCA SCJ","RCT ARCT",
+  "REC. CASES","REVOCATION","RP","RTI appeal","SC","S. Cause","SMA","Succ. Court",
+  "TA","TC","T. P (C)","T. P (CRL)"
+];
+
+
+/* ==========================
+   AUTO SET COURT
+========================== */
+function autoSetCourt(){
+  let courtType = document.getElementById("case_type").value;
+  let court = document.getElementById("court");
+
+  if(courtType === "District Court"){
+    court.value = "Dwarka District Court";
+  }
+  if(courtType === "High Court"){
+    court.value = "Delhi High Court";
+  }
+}
+
+
+/* ==========================
+   LOAD CASE TYPES
+========================== */
+function loadCaseTypes(){
+  const courtType = document.getElementById("case_type").value;
+  const court = document.getElementById("court").value;
+  const caseTypeSelect = document.getElementById("case_sub_type");
+
+  caseTypeSelect.innerHTML = `<option value="">-- Select Case Type --</option>`;
+
+  let list = [];
+
+  // District Court = Dwarka
+  if(courtType === "District Court" || court === "Dwarka District Court"){
+    list = DWARKA_CASE_TYPES;
+  }
+
+  // High Court
+  if(courtType === "High Court" || court === "Delhi High Court"){
+    list = HIGH_COURT_CASE_TYPES;
+  }
+
+  list.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    caseTypeSelect.appendChild(opt);
+  });
+}
+
+
+/* ==========================
+   COURT SEARCH URLS
+========================== */
+function getCourtSearchUrl(court){
+  if(!court) return "";
+
+  if(court === "Dwarka District Court"){
+    return "https://southwestdelhi.dcourts.gov.in/case-status-search-by-case-number/";
+  }
+
+  if(court === "Delhi High Court"){
+    return "https://delhihighcourt.nic.in/app/get-case-type-status";
+  }
+
+  return "";
+}
+
+function openCourtSite(){
+  let court = document.getElementById("court").value;
+  let caseNo = document.getElementById("case_number").value.trim();
+  let caseYear = document.getElementById("case_year").value.trim();
+
+  if(court === ""){
+    alert("Please select a court first!");
+    return;
+  }
+
+  if(caseNo === "" || caseYear === ""){
+    if(!confirm("Case No/Year is empty. Still open court website?")) return;
+  }
+
+  let url = getCourtSearchUrl(court);
+
+  if(url === ""){
+    alert("Court URL not found!");
+    return;
+  }
+
+  window.open(url, "_blank");
+}
+
+
+/* ================== PDF UPLOAD ================== */
+async function uploadPdfCreateCase(){
+  let fileInput = document.getElementById("pdfFile");
+  let msg = document.getElementById("pdfMsg");
+
+  msg.innerHTML = "";
+
+  if(fileInput.files.length === 0){
+    alert("Please select a PDF first!");
+    return;
+  }
+
+  let formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  msg.innerHTML = "⏳ Uploading PDF and extracting details...";
+
+  let res = await fetch("/add_case_pdf", {
+    method: "POST",
+    body: formData
+  });
+
+  let data = await res.json();
+
+  if(data.error){
+    msg.innerHTML = `<span style="color:#b91c1c;">❌ ${data.error}</span>`;
+    return;
+  }
+
+  msg.innerHTML = `
+    <span style="color:#15803d; font-weight:700;">
+      ✅ ${data.message}
+    </span>
+    <br>
+    <span style="color:#64748b;">
+      Next Hearing Detected: <b>${data.next_date_detected || "Not Found"}</b>
+    </span>
+    <br><br>
+    <a class="btn btn-primary" href="/edit/${data.case_id}">
+      ✏ Open New Case (Edit)
+    </a>
+    <a class="btn btn-light" href="/case/${data.case_id}">
+      🔎 View Full Detail
+    </a>
+  `;
+
+  fileInput.value = "";
+}
+
+
+/* ================== MANUAL SAVE ================== */
 async function saveCase(){
 
   let client_name = document.getElementById("client_name").value.trim();
   let case_title = document.getElementById("case_title").value.trim();
+  let case_number = document.getElementById("case_number").value.trim();
+  let case_year = document.getElementById("case_year").value.trim();
+
+  let court_type = document.getElementById("case_type").value.trim(); // District/High
+  let case_type = document.getElementById("case_sub_type").value.trim(); // actual case type
+
   let court = document.getElementById("court").value.trim();
   let hearing_date = document.getElementById("hearing_date").value;
   let status = document.getElementById("status").value;
 
-  if(client_name === "" || case_title === "" || court === ""){
-    alert("Please fill all required fields!");
+  if(client_name === "" || case_title === "" || court === "" || court_type === "" || case_type === ""){
+    alert("Please fill all required fields (Client, Title, Court Type, Case Type, Court).");
+    return;
+  }
+
+  if(case_number === "" || case_year === ""){
+    alert("Please enter Case Number and Case Year!");
     return;
   }
 
@@ -75,23 +348,32 @@ async function saveCase(){
     body: JSON.stringify({
       client_name,
       case_title,
-      court,
+      case_number,
+      case_year,
+      case_type,     // now this will store the REAL type like W.P.(C)
+      court,         // Dwarka / Delhi HC
       hearing_date,
       status
     })
   });
 
   let data = await res.json();
-
   alert(data.message || "Case saved successfully!");
 
-  // Clear fields
   document.getElementById("client_name").value = "";
   document.getElementById("case_title").value = "";
+  document.getElementById("case_number").value = "";
+  document.getElementById("case_year").value = "";
+  document.getElementById("case_type").value = "";
   document.getElementById("court").value = "";
+  document.getElementById("case_sub_type").innerHTML = `<option value="">-- Select Case Type --</option>`;
   document.getElementById("hearing_date").value = "";
   document.getElementById("status").value = "Pending";
 }
+
+
+/* Load case types once */
+window.onload = loadCaseTypes;
 </script>
 
 {% endblock %}
